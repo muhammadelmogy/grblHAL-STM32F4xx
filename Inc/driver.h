@@ -31,6 +31,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define ESTOP_ENABLE 0
+
 #ifndef OVERRIDE_MY_MACHINE
 #include "my_machine.h"
 #endif
@@ -139,6 +141,8 @@
   #include "st_morpho_dac_map.h"
 #elif defined(BOARD_MINI_BLACKPILL)
   #include "mini_blackpill_map.h"
+#elif defined(BOARD_MLABS_CONTROLLER)
+  #include "mlabs_controller_map.h"
 #elif defined(BOARD_MY_MACHINE)
   #include "my_machine_map.h"
 #else // default board
@@ -255,17 +259,14 @@
 #if SPINDLE_PWM_TIMER_N == 2 || SPINDLE_PWM_TIMER_N == 3
 #error Timer conflict: spindle sync and spindle PWM!
 #endif
-#ifndef RPM_COUNTER_N
+
 #define RPM_COUNTER_N               3
-#endif
 #define RPM_COUNTER                 timer(RPM_COUNTER_N)
 #define RPM_COUNTER_IRQn            timerINT(RPM_COUNTER_N)
 #define RPM_COUNTER_IRQHandler      timerHANDLER(RPM_COUNTER_N)
 #define RPM_COUNTER_CLOCK_ENA       timerCLKENA(RPM_COUNTER_N)
 
-#ifndef RPM_TIMER_N
 #define RPM_TIMER_N                 2
-#endif
 #define RPM_TIMER                   timer(RPM_TIMER_N)
 #define RPM_TIMER_IRQn              timerINT(RPM_TIMER_N)
 #define RPM_TIMER_IRQHandler        timerHANDLER(RPM_TIMER_N)
