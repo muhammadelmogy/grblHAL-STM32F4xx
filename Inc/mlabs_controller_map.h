@@ -55,6 +55,10 @@
 */
 #define EEPROM_ENABLE 1 
 
+// Enable USART1 on PORTB pin3 for RX, PORTA pin15 for TX
+#define SERIAL_MOD 1
+#define SERIAL_MOD1_ALT_PINMAP
+
 // Define step pulse output pins.
 #define X_STEP_PORT                 GPIOA
 #define X_STEP_PIN                  0

@@ -294,13 +294,18 @@ const io_stream_t *serialInit (uint32_t baud_rate)
         .Pull      = GPIO_NOPULL,
         .Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
         #ifdef SERIAL_MOD1_ALT_PINMAP
-        .Pin       = GPIO_PIN_3|GPIO_PIN_15,
+        .Pin       = GPIO_PIN_15,
         #else
         .Pin       = GPIO_PIN_9|GPIO_PIN_10,
         #endif
         .Alternate = GPIO_AF7_USART1
     };
     HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    #ifdef SERIAL_MOD1_ALT_PINMAP
+    GPIO_InitStructure.Pin = GPIO_PIN_3;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+    #endif
 
     static const periph_pin_t tx = {
         .function = Output_TX,
