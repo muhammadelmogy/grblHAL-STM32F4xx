@@ -293,7 +293,11 @@ const io_stream_t *serialInit (uint32_t baud_rate)
         .Mode      = GPIO_MODE_AF_PP,
         .Pull      = GPIO_NOPULL,
         .Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
+        #ifdef SERIAL_MOD1_ALT_PINMAP
+        .Pin       = GPIO_PIN_3|GPIO_PIN_15,
+        #else
         .Pin       = GPIO_PIN_9|GPIO_PIN_10,
+        #endif
         .Alternate = GPIO_AF7_USART1
     };
     HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
@@ -302,7 +306,11 @@ const io_stream_t *serialInit (uint32_t baud_rate)
         .function = Output_TX,
         .group = PinGroup_UART1,
         .port = GPIOA,
+        #ifdef SERIAL_MOD1_ALT_PINMAP
+        .pin = 15,
+        #else
         .pin = 9,
+        #endif
         .mode = { .mask = PINMODE_OUTPUT },
         .description = "UART1"
     };
@@ -310,8 +318,13 @@ const io_stream_t *serialInit (uint32_t baud_rate)
     static const periph_pin_t rx = {
         .function = Input_RX,
         .group = PinGroup_UART1,
+        #ifdef SERIAL_MOD1_ALT_PINMAP
+        .port = GPIOB,
+        .pin = 3,
+        #else
         .port = GPIOA,
         .pin = 10,
+        #endif
         .mode = { .mask = PINMODE_NONE },
         .description = "UART1"
     };
