@@ -20,8 +20,17 @@
 
 #include "main.h"
 #include "ff.h"
+
+#if !SDCARD_SDIO
+
 #include "diskio.h"
 #include "spi.h"
+
+#include "grbl/task.h"
+
+#ifndef SDCARD_USE_DMA
+#define SDCARD_USE_DMA 1
+#endif
 
 /* Definitions for MMC/SDC command */
 #define CMD0    (0x40+0)    /* GO_IDLE_STATE */
@@ -48,14 +57,14 @@
 static inline
 void SELECT (void)
 {
-    BITBAND_PERI(SD_CS_PORT->ODR, SD_CS_PIN) = 0;
+    DIGITAL_OUT(SD_CS_PORT, SD_CS_PIN, 0);
 }
 
 /* de-asserts the CS pin to the card */
 static inline
 void DESELECT (void)
 {
-    BITBAND_PERI(SD_CS_PORT->ODR, SD_CS_PIN) = 1;
+    DIGITAL_OUT(SD_CS_PORT, SD_CS_PIN, 1);
 }
 
 /*--------------------------------------------------------------------------
@@ -88,11 +97,15 @@ BYTE PowerFlag = 0;     /* indicates if "power" is on */
 
 #define rcvr_spi() (BYTE)spi_get_byte()
 
-static
+#if !SDCARD_USE_DMA
+
+static inline
 void rcvr_spi_m (BYTE *dst)
 {
     *dst = rcvr_spi();
 }
+
+#endif
 
 /*-----------------------------------------------------------------------*/
 /* Wait for card ready                                                   */
@@ -122,6 +135,8 @@ void send_initial_clock_train(void)
 {
     unsigned int i = 10;
 
+    spi_set_speed(SPI_BAUDRATEPRESCALER_256);
+
     /* Ensure CS is held high. */
     DESELECT();
 
@@ -132,12 +147,35 @@ void send_initial_clock_train(void)
 }
 
 /*-----------------------------------------------------------------------*/
+/* Device Timer Interrupt Procedure  (Platform dependent)                */
+/*-----------------------------------------------------------------------*/
+/* This function must be called in period of 10ms                        */
+
+static
+void disk_timerproc (void *data)
+{
+    static uint32_t fatfs_ticks = 10;
+
+    if(!(--fatfs_ticks)) {
+
+        BYTE n;
+
+        n = Timer1;                        /* 100Hz decrement timer */
+        if (n) Timer1 = --n;
+        n = Timer2;
+        if (n) Timer2 = --n;
+
+        fatfs_ticks = 10;
+    }
+}
+
+/*-----------------------------------------------------------------------*/
 /* Power Control  (Platform dependent)                                   */
 /*-----------------------------------------------------------------------*/
 /* When the target system does not support socket power control, there   */
 /* is nothing to do in these functions and chk_power always returns 1.   */
 
-//static
+static
 void power_on (void)
 {
     /*
@@ -146,18 +184,26 @@ void power_on (void)
      */
 
     spi_init();
-
-    PowerFlag = 1;
+    if(!PowerFlag) {
+        task_add_systick(disk_timerproc, NULL);
+        PowerFlag = 1;
+    }
 }
 
 // set the SSI speed to the max setting
-
-#define set_max_speed() spi_set_max_speed()
+static
+void set_max_speed(void)
+{
+    spi_set_speed(SPI_BAUDRATEPRESCALER_16);
+}
 
 static
 void power_off (void)
 {
-    PowerFlag = 0;
+    if(PowerFlag) {
+        task_delete_systick(disk_timerproc, NULL);
+        PowerFlag = 0;
+    }
 }
 
 static
@@ -184,10 +230,16 @@ BOOL rcvr_datablock (
     } while ((token == 0xFF) && Timer1);
     if(token != 0xFE) return FALSE;    /* If not valid data token, retutn with error */
 
+#if SDCARD_USE_DMA
+    memset(buff, 0xFF, btr);
+    spi_read((uint8_t *)buff, btr); /* Receive the data block into buffer */
+#else
     do {                            /* Receive the data block into buffer */
         rcvr_spi_m(buff++);
         rcvr_spi_m(buff++);
     } while (btr -= 2);
+#endif
+
     rcvr_spi();                        /* Discard CRC */
     rcvr_spi();
 
@@ -207,18 +259,22 @@ BOOL xmit_datablock (
     BYTE token            /* Data/Stop token */
 )
 {
-    BYTE resp, wc;
+    BYTE resp;
 
 
     if (wait_ready() != 0xFF) return FALSE;
 
     xmit_spi(token);                    /* Xmit data token */
     if (token != 0xFD) {    /* Is data token */
-        wc = 0;
+#if SDCARD_USE_DMA
+        spi_write((uint8_t *)buff, 512); /* Xmit the 512 byte data block to MMC */
+#else
+        BYTE wc = 0;
         do {                            /* Xmit the 512 byte data block to MMC */
             xmit_spi(*buff++);
             xmit_spi(*buff++);
         } while (--wc);
+#endif
         xmit_spi(0xFF);                    /* CRC (Dummy) */
         xmit_spi(0xFF);
         resp = rcvr_spi();                /* Reveive data response */
@@ -408,7 +464,7 @@ DRESULT disk_read (
     BYTE drv,            /* Physical drive nmuber (0) */
     BYTE *buff,            /* Pointer to the data buffer to store read data */
     DWORD sector,        /* Start sector number (LBA) */
-    BYTE count            /* Sector count (1..255) */
+    UINT count            /* Sector count (1..255) */
 )
 {
     if (drv || !count) return RES_PARERR;
@@ -451,7 +507,7 @@ DRESULT disk_write (
     BYTE drv,            /* Physical drive nmuber (0) */
     const BYTE *buff,    /* Pointer to the data to be written */
     DWORD sector,        /* Start sector number (LBA) */
-    BYTE count            /* Sector count (1..255) */
+    UINT count            /* Sector count (1..255) */
 )
 {
     if (drv || !count) return RES_PARERR;
@@ -489,7 +545,7 @@ DRESULT disk_write (
 }
 #endif /* _READONLY */
 
-
+#endif // SDCARD_SDIO
 
 /*-----------------------------------------------------------------------*/
 /* Miscellaneous Functions                                               */
@@ -597,24 +653,6 @@ DRESULT disk_ioctl (
 
 
 
-/*-----------------------------------------------------------------------*/
-/* Device Timer Interrupt Procedure  (Platform dependent)                */
-/*-----------------------------------------------------------------------*/
-/* This function must be called in period of 10ms                        */
-
-void disk_timerproc (void)
-{
-//    BYTE n, s;
-    BYTE n;
-
-
-    n = Timer1;                        /* 100Hz decrement timer */
-    if (n) Timer1 = --n;
-    n = Timer2;
-    if (n) Timer2 = --n;
-
-}
-
 /*---------------------------------------------------------*/
 /* User Provided Timer Function for FatFs module           */
 /*---------------------------------------------------------*/
@@ -624,15 +662,23 @@ void disk_timerproc (void)
 
 DWORD get_fattime (void)
 {
+    struct tm time;
+    DWORD dt = ((2007UL-1980) << 25) | // Year = 2007
+                (6UL << 21) |          // Month = June
+                (5UL << 16) |          // Day = 5
+                (11U << 11) |          // Hour = 11
+                (38U << 5) |           // Min = 38
+                (0U >> 1);             // Sec = 0
 
-    return    ((2007UL-1980) << 25)    // Year = 2007
-            | (6UL << 21)            // Month = June
-            | (5UL << 16)            // Day = 5
-            | (11U << 11)            // Hour = 11
-            | (38U << 5)            // Min = 38
-            | (0U >> 1)                // Sec = 0
-            ;
+    if(hal.rtc.get_datetime && hal.rtc.get_datetime(&time))
+        dt = ((time.tm_year - 80) << 25) |
+             ((time.tm_mon + 1) << 21) |
+              (time.tm_mday << 16) |
+              (time.tm_hour << 11) |
+              (time.tm_min << 5) |
+              (time.tm_sec >> 1);
 
+    return dt;
 }
 
-#endif
+#endif // SDCARD_ENABLE
