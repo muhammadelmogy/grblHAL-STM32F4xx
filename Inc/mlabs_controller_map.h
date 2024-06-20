@@ -44,6 +44,7 @@
 
 #define BOARD_NAME "Mlabs Controller"
 
+#define USB_SERIAL_CDC 1
 #undef I2C_ENABLE
 #undef EEPROM_ENABLE
 
@@ -74,7 +75,7 @@
 #define Y_DIRECTION_PORT            GPIOA
 #define Y_DIRECTION_PIN             3
 #define Z_DIRECTION_PORT            GPIOA
-#define Z_DIRECTION_PIN             4
+#define Z_DIRECTION_PIN             5
 #define DIRECTION_OUTMODE           GPIO_BITBAND
 
 // Define stepper driver enable/disable output pin.
@@ -84,14 +85,18 @@
 
 // Define homing/hard limit switch input pins.
 #define X_LIMIT_PORT                GPIOB
-#define X_LIMIT_PIN                 13
+#define X_LIMIT_PIN                 7
 #define Y_LIMIT_PORT                GPIOB
-#define Y_LIMIT_PIN                 14
+#define Y_LIMIT_PIN                 6
 #define Z_LIMIT_PORT                GPIOB
-#define Z_LIMIT_PIN                 15
+#define Z_LIMIT_PIN                 5
 #define LIMIT_INMODE                GPIO_BITBAND
 
 // Define ganged axis or A axis step pulse and step direction output pins.
+
+//#define Y_GANGED            1
+//#define Y_AUTO_SQUARE       1
+//#define Y_GANGED_LIM_MAX    1
 
 #if N_ABC_MOTORS > 0
 #define M3_AVAILABLE

@@ -1814,7 +1814,7 @@ static bool driver_setup (settings_t *settings)
     STEPPER_TIMER->CR1 &= ~TIM_CR1_CEN;
     STEPPER_TIMER->SR &= ~TIM_SR_UIF;
     STEPPER_TIMER->CNT = 0;
-    STEPPER_TIMER->DIER |= TIM_DIER_UIE;
+    STEPPER_TIMER->DIER |= TIM_CR1_DIR;
 
     HAL_NVIC_SetPriority(STEPPER_TIMER_IRQn, 1, 0);
     NVIC_EnableIRQ(STEPPER_TIMER_IRQn);
