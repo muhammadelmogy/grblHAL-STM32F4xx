@@ -156,10 +156,9 @@
 #elif defined(BOARD_MORPHO_DAC_CNC)
   #include "boards/st_morpho_dac_map.h"
 #elif defined(BOARD_MINI_BLACKPILL)
-  #include "mini_blackpill_map.h"
-#elif defined(BOARD_MLABS_CONTROLLER)
-  #include "mlabs_controller_map.h"
   #include "boards/mini_blackpill_map.h"
+#elif defined(BOARD_MLABS_CONTROLLER)
+  #include "boards/mlabs_controller_map.h"  
 #elif defined(BOARD_FLEXI_HAL)
   #include "boards/flexi_hal_map.h"
 #elif defined(BOARD_STM32F401_UNI)
@@ -225,8 +224,6 @@
 #define PULSE_TIMER_IRQn            timerINT(PULSE_TIMER_N)
 #define PULSE_TIMER_IRQHandler      timerHANDLER(PULSE_TIMER_N)
 
-#if STEP_INJECT_ENABLE
-
 #if SPINDLE_PWM_PORT_BASE == GPIOA_BASE
   #if SPINDLE_PWM_PIN == 5 // PA5 - TIM2_CH1
     #define SPINDLE_PWM_TIMER_N     2
@@ -273,13 +270,15 @@
   #endif
 #endif
 
+#if STEP_INJECT_ENABLE
+
 #if defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F446xx)
 #define PULSE2_TIMER_N              7
 #define PULSE2_TIMER                timer(PULSE2_TIMER_N)
 #define PULSE2_TIMER_CLKEN          timerCLKEN(PULSE2_TIMER_N)
 #define PULSE2_TIMER_IRQn           timerINT(PULSE2_TIMER_N)
 #define PULSE2_TIMER_IRQHandler     timerHANDLER(PULSE2_TIMER_N)
-
+#endif
 
 #if !defined(PULSE2_TIMER_N) && STEP_INJECT_ENABLE
 #define PULSE2_TIMER_N              3
