@@ -19,24 +19,6 @@
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* Default Pin Assignments:
- * A0  X Step       | B0  Step En/Dis       | C0  (N/A)
- * A1  X Direction  | B1  Spindle Enable    | C1  (N/A)
- * A2  Y Step       | B2  Spindle Direction | C2  (N/A)
- * A3  Y Direction  | B3                    | C3  (N/A)
- * A4  Z Step       | B4                    | C4  (N/A)
- * A5  Z Direction  | B5                    | C5  (N/A)
- * A6  A Step       | B6  Reset             | C6  (N/A)
- * A7  A Direction  | B7  Feed Hold         | C7  (N/A)
- * A8  Spindle PWM  | B8  Cycle Start       | C8  (N/A)
- * A9  Y2 Step      | B9  Door Safety       | C9  (N/A)
- * A10 Y2 Direction | B10 Y2 Limit          | C10 (N/A)
- * A11              | B11                   | C11 (N/A)
- * A12              | B12 X Limit           | C12 (N/A)
- * A13              | B13 Y Limit           | C13
- * A14              | B14 Z Limit           | C14 Coolant Flood
- * A15              | B15 Probe             | C15 coolant Mist
- */
 
 #if N_ABC_MOTORS > 2
 #error "MLABS Controller supports 5 motors max."
@@ -101,13 +83,13 @@
 #if N_ABC_MOTORS > 0
 
 #define M3_AVAILABLE
-#define M3_STEP_PORT                GPIOA
-#define M3_STEP_PIN                 6
-#define M3_DIRECTION_PORT           GPIOA
-#define M3_DIRECTION_PIN            7
+#define M3_STEP_PORT                GPIOB//GPIOA
+#define M3_STEP_PIN                 0//6
+#define M3_DIRECTION_PORT           GPIOB//GPIOA
+#define M3_DIRECTION_PIN            1//7
 #if N_AUTO_SQUARED
 #define M3_LIMIT_PORT               GPIOB
-#define M3_LIMIT_PIN                4
+#define M3_LIMIT_PIN                3//4
 #define M3_ENABLE_PORT              GPIOB
 #define M3_ENABLE_PIN               2
 #endif
@@ -115,30 +97,52 @@
 
 #if N_ABC_MOTORS == 2
 #define M4_AVAILABLE
-#define M4_STEP_PORT                GPIOB
-#define M4_STEP_PIN                 0
-#define M4_DIRECTION_PORT           GPIOB
-#define M4_DIRECTION_PIN            1
+#define M4_STEP_PORT                GPIOA//GPIOB
+#define M4_STEP_PIN                 6//0
+#define M4_DIRECTION_PORT           GPIOA//GPIOB
+#define M4_DIRECTION_PIN            7//1
 #if N_AUTO_SQUARED
 #define M4_LIMIT_PORT               GPIOB
-#define M4_LIMIT_PIN                3
+#define M4_LIMIT_PIN                4//3
 #define M4_ENABLE_PORT              GPIOB
 #define M4_ENABLE_PIN               2
 #endif
 #endif
 
-// Define probe switch input pin.
-#define PROBE_PORT                  GPIOA
-#define PROBE_PIN                   15
+#define HAS_IOPORTS
+#define AUXINPUT0_PORT              GPIOC
+#define AUXINPUT0_PIN               14
+#define AUXINPUT1_PORT              GPIOC
+#define AUXINPUT1_PIN               13
+#define AUXINPUT2_PORT              GPIOA //probe
+#define AUXINPUT2_PIN               15
 
-// Define spindle enable and spindle direction output pins.
-#define SPINDLE_ENABLE_PORT         GPIOB
-#define SPINDLE_ENABLE_PIN          12
-#define SPINDLE_DIRECTION_PORT      GPIOB
-#define SPINDLE_DIRECTION_PIN       14
-// Define spindle PWM output pin.
-#define SPINDLE_PWM_PORT            GPIOB_BASE
-#define SPINDLE_PWM_PIN             10
+#define AUXOUTPUT0_PORT             GPIOB
+#define AUXOUTPUT0_PIN              13
+#define AUXOUTPUT1_PORT             GPIOB
+#define AUXOUTPUT1_PIN              14
+#define AUXOUTPUT2_PORT             GPIOB //spindle enable
+#define AUXOUTPUT2_PIN              12
+#define AUXOUTPUT3_PORT             GPIOB //spindle PWM
+#define AUXOUTPUT3_PIN              10
+
+// Define driver spindle pins
+//Disable direction
+#undef DRIVER_SPINDLE_DIR_ENABLE
+#define DRIVER_SPINDLE_DIR_ENABLE 0
+
+#if DRIVER_SPINDLE_ENABLE
+#define SPINDLE_ENABLE_PORT     AUXOUTPUT2_PORT
+#define SPINDLE_ENABLE_PIN      AUXOUTPUT2_PIN
+#if DRIVER_SPINDLE_PWM_ENABLE
+#define SPINDLE_PWM_PORT        AUXOUTPUT3_PORT
+#define SPINDLE_PWM_PIN         AUXOUTPUT3_PIN
+#endif
+#if DRIVER_SPINDLE_DIR_ENABLE
+#define SPINDLE_DIRECTION_PORT  AUXOUTPUT4_PORT
+#define SPINDLE_DIRECTION_PIN   AUXOUTPUT4_PIN
+#endif
+#endif //DRIVER_SPINDLE_ENABLE
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT          GPIOC
@@ -165,16 +169,13 @@
 #endif
 #define CONTROL_INMODE              GPIO_BITBAND
 
+// Define probe switch input pin.
+#undef PROBE_PORT
+#define PROBE_PORT                  AUXINPUT2_PORT
+#define PROBE_PIN                   AUXINPUT2_PIN
 
-#define HAS_IOPORTS
-#define AUXINPUT0_PORT              GPIOC
-#define AUXINPUT0_PIN               14
-#define AUXINPUT1_PORT              GPIOC
-#define AUXINPUT1_PIN               13
-#define AUXOUTPUT0_PORT             GPIOB
-#define AUXOUTPUT0_PIN              13
-#define AUXOUTPUT1_PORT             GPIOB
-#define AUXOUTPUT1_PIN              14
+
+
 
 // NOT SUPPORTED
 #if KEYPAD_ENABLE
